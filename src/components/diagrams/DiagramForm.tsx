@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
-import type { Diagram } from "@/types";
+import type { Diagram, CreateDiagramPayload, UpdateDiagramPayload } from "@/types";
 
 export default function DiagramForm({ diagram, onClose }: { diagram?: Diagram | null; onClose: () => void }) {
   const [formData, setFormData] = useState<{ name: string; description: string; client_name: string }>(
@@ -26,11 +26,11 @@ export default function DiagramForm({ diagram, onClose }: { diagram?: Diagram | 
   const queryClient = useQueryClient();
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: (data: CreateDiagramPayload | UpdateDiagramPayload) => {
       if (diagram) {
-        return api.diagrams.update(diagram.id, data);
+        return api.diagrams.update(diagram.id, data as UpdateDiagramPayload);
       }
-      return api.diagrams.create(data);
+      return api.diagrams.create(data as CreateDiagramPayload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diagrams'] });

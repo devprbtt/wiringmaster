@@ -128,28 +128,28 @@ export default function ConnectionPanel({
 
   const { data: deviceIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['device-ios', selectedDevice.device_id],
-    queryFn: (): Promise<DeviceIO[]> => api.deviceIOs.list(selectedDevice.device_id),
+    queryFn: () => api.deviceIOs.list(selectedDevice.device_id) as Promise<DeviceIO[]>,
   });
 
   const { data: targetIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['target-ios', targetDeviceId],
-    queryFn: (): Promise<DeviceIO[]> => {
+    queryFn: () => {
       if (!targetDeviceId) return Promise.resolve([]);
       const targetDiagramDevice = diagramDevices.find(d => d.id === targetDeviceId);
       if (!targetDiagramDevice) return Promise.resolve([]);
-      return api.deviceIOs.list(targetDiagramDevice.device_id);
+      return api.deviceIOs.list(targetDiagramDevice.device_id) as Promise<DeviceIO[]>;
     },
     enabled: !!targetDeviceId,
   });
 
   const { data: allDevices = [] } = useQuery<Device[]>({
     queryKey: ['devices'],
-    queryFn: (): Promise<Device[]> => api.devices.list(),
+    queryFn: () => api.devices.list() as Promise<Device[]>,
   });
 
   const { data: allIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['all-ios'],
-    queryFn: () => api.deviceIOs.list(),
+    queryFn: () => api.deviceIOs.list() as Promise<DeviceIO[]>,
   });
 
   const createConnectionMutation = useMutation({
