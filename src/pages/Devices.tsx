@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
@@ -17,11 +17,14 @@ export default function Devices() {
 
   const { data: devices = [], isLoading } = useQuery({
     queryKey: ['devices'],
-    queryFn: () => base44.entities.Device.list('-created_date'),
+    queryFn: async () => {
+      const allDevices = await api.devices.list();
+      return allDevices.sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
+    },
   });
 
   const deleteDeviceMutation = useMutation({
-    mutationFn: (id) => base44.entities.Device.delete(id),
+    mutationFn: (id) => api.devices.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] });
     },

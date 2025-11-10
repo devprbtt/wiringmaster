@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Download } from "lucide-react";
@@ -21,37 +21,34 @@ export default function DiagramEditor() {
 
   const { data: diagram } = useQuery<Diagram | undefined>({
     queryKey: ['diagram', diagramId],
-    queryFn: async () => {
-      const diagrams = await base44.entities.Diagram.filter({ id: diagramId });
-      return diagrams[0];
-    },
+    queryFn: () => api.diagrams.get(diagramId!),
     enabled: !!diagramId,
   });
 
   const { data: diagramDevices = [] } = useQuery<DiagramDevice[]>({
     queryKey: ['diagram-devices', diagramId],
-    queryFn: () => base44.entities.DiagramDevice.filter({ diagram_id: diagramId }),
+    queryFn: () => api.diagramDevices.list(diagramId!),
     enabled: !!diagramId,
   });
 
   const { data: connections = [] } = useQuery<ConnectionType[]>({
     queryKey: ['connections', diagramId],
-    queryFn: () => base44.entities.Connection.filter({ diagram_id: diagramId }),
+    queryFn: () => api.connections.list(diagramId!),
     enabled: !!diagramId,
   });
 
   const { data: devices = [] } = useQuery<Device[]>({
     queryKey: ['devices'],
-    queryFn: () => base44.entities.Device.list(),
+    queryFn: () => api.devices.list(),
   });
 
   const { data: allIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['all-ios'],
-    queryFn: () => base44.entities.DeviceIO.list(),
+    queryFn: () => api.deviceIOs.list(),
   });
 
   const addDeviceMutation = useMutation({
-    mutationFn: (data) => base44.entities.DiagramDevice.create(data),
+    mutationFn: (data) => api.diagramDevices.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diagram-devices', diagramId] });
       setShowLibrary(false);

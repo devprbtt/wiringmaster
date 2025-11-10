@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,25 +125,22 @@ export default function ConnectionPanel({
 
   const { data: device } = useQuery<Device | undefined>({
     queryKey: ['device', selectedDevice.device_id],
-    queryFn: async () => {
-      const devices = await base44.entities.Device.filter({ id: selectedDevice.device_id }) as any[];
-      return devices[0] as Device | undefined;
-    },
+    queryFn: () => api.devices.get(selectedDevice.device_id),
   });
 
   const deviceIOsQuery = useQuery<DeviceIO[]>({
     queryKey: ['device-ios', selectedDevice.device_id],
-    queryFn: () => base44.entities.DeviceIO.filter({ device_id: selectedDevice.device_id }) as Promise<DeviceIO[]>,
+    queryFn: () => api.deviceIOs.list(selectedDevice.device_id),
   });
   const deviceIOs: DeviceIO[] = deviceIOsQuery.data ?? [];
 
   const targetIOsQuery = useQuery<DeviceIO[]>({
     queryKey: ['target-ios', targetDeviceId],
     queryFn: () => {
-      if (!targetDeviceId) return [] as any;
+      if (!targetDeviceId) return [];
       const targetDiagramDevice = diagramDevices.find(d => d.id === targetDeviceId);
-      if (!targetDiagramDevice) return [] as any;
-      return base44.entities.DeviceIO.filter({ device_id: targetDiagramDevice.device_id }) as Promise<DeviceIO[]>;
+      if (!targetDiagramDevice) return [];
+      return api.deviceIOs.list(targetDiagramDevice.device_id);
     },
     enabled: !!targetDeviceId,
   });
@@ -151,12 +148,12 @@ export default function ConnectionPanel({
 
   const allDevicesQuery = useQuery<Device[]>({
     queryKey: ['devices'],
-    queryFn: () => base44.entities.Device.list() as Promise<Device[]>,
+    queryFn: () => api.devices.list(),
   });
   const allDevices: Device[] = allDevicesQuery.data ?? [];
 
   const createConnectionMutation = useMutation({
-    mutationFn: (data: any) => base44.entities.Connection.create(data),
+    mutationFn: (data: any) => api.connections.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections', diagramId] });
       resetForm();
@@ -164,7 +161,7 @@ export default function ConnectionPanel({
   });
 
   const deleteConnectionMutation = useMutation({
-    mutationFn: (id: string) => base44.entities.Connection.delete(id),
+    mutationFn: (id: string) => api.connections.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections', diagramId] });
     },

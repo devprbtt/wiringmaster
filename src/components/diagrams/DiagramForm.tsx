@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,9 @@ export default function DiagramForm({ diagram, onClose }: { diagram?: Diagram | 
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (diagram) {
-        return base44.entities.Diagram.update(diagram.id, data);
+        return api.diagrams.update(diagram.id, data);
       }
-      return base44.entities.Diagram.create(data);
+      return api.diagrams.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diagrams'] });

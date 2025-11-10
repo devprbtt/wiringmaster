@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Upload, Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import type { Device } from "@/types";
 
 const categories = [
@@ -52,9 +52,9 @@ export default function DeviceForm({ device, onClose }: DeviceFormProps) {
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (device) {
-        return base44.entities.Device.update(device.id, data);
+        return api.devices.update(device.id, data);
       }
-      return base44.entities.Device.create(data);
+      return api.devices.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] });
@@ -69,7 +69,7 @@ export default function DeviceForm({ device, onClose }: DeviceFormProps) {
     if (!file) return;
 
     setUploadingImage(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await api.uploadFile(file);
     setFormData({ ...formData, image_url: file_url });
     setUploadingImage(false);
   };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DeviceBlock from "./DeviceBlock";
 import type { DiagramDevice, Device, DeviceIO, Connection } from "@/types";
@@ -26,17 +26,17 @@ export default function DiagramCanvas({
 
   const { data: devices = [] } = useQuery<Device[]>({
     queryKey: ['devices'],
-    queryFn: () => base44.entities.Device.list(),
+    queryFn: () => api.devices.list(),
   });
 
   const { data: allIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['all-ios'],
-    queryFn: () => base44.entities.DeviceIO.list(),
+    queryFn: () => api.deviceIOs.list(),
   });
 
   const updatePositionMutation = useMutation({
     mutationFn: ({ id, position_x, position_y }: { id: string; position_x: number; position_y: number }) =>
-      base44.entities.DiagramDevice.update(id, { position_x, position_y }),
+      api.diagramDevices.update(id, { position_x, position_y }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diagram-devices', diagramId] });
     },

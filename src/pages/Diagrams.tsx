@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +17,14 @@ export default function Diagrams() {
 
   const { data: diagrams = [], isLoading } = useQuery({
     queryKey: ['diagrams'],
-    queryFn: () => base44.entities.Diagram.list('-updated_date'),
+    queryFn: async () => {
+      const allDiagrams = await api.diagrams.list();
+      return allDiagrams.sort((a, b) => new Date(b.updated_date).getTime() - new Date(a.updated_date).getTime());
+    },
   });
 
   const deleteDiagramMutation = useMutation({
-    mutationFn: (id) => base44.entities.Diagram.delete(id),
+    mutationFn: (id) => api.diagrams.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diagrams'] });
     },

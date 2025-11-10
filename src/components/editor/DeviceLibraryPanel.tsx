@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,10 @@ export default function DeviceLibraryPanel({ onSelectDevice, onClose }: { onSele
 
   const { data: devices = [] } = useQuery<Device[]>({
     queryKey: ['devices'],
-    queryFn: () => base44.entities.Device.list('-created_date'),
+    queryFn: async () => {
+      const allDevices = await api.devices.list();
+      return allDevices.sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
+    },
   });
 
   const filteredDevices = devices.filter(device =>
