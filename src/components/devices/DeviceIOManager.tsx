@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Trash2, ArrowDown, ArrowUp, ArrowLeftRight } from "lucide-react";
-import type { Device, DeviceIO } from "@/types";
+import type { Device, DeviceIO, CreateDeviceIOPayload } from "@/types";
 
 const connectorTypes = [
   "HDMI", "RJ45", "RCA Audio", "XLR", "Optical Toslink", "Coaxial Digital",
@@ -34,14 +34,13 @@ export default function DeviceIOManager({ device, onClose }: Props) {
   });
   const queryClient = useQueryClient();
 
-  const iosQuery = useQuery<DeviceIO[]>({
+  const { data: ios = [] } = useQuery<DeviceIO[]>({
     queryKey: ['device-ios', device.id],
-    queryFn: () => base44.entities.DeviceIO.filter({ device_id: device.id }) as Promise<DeviceIO[]>,
+    queryFn: (): Promise<DeviceIO[]> => base44.entities.DeviceIO.filter({ device_id: device.id }),
   });
-  const ios: DeviceIO[] = iosQuery.data ?? [];
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: (data: CreateDeviceIOPayload) => {
       if (editingIO) {
         return base44.entities.DeviceIO.update(editingIO.id, data);
       }
