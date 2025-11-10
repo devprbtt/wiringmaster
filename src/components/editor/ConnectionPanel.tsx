@@ -1,0 +1,418 @@
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { X, Trash2, AlertCircle, ArrowDown, ArrowUp, ArrowLeftRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { DiagramDevice, Device, DeviceIO, Connection } from "@/types";
+
+// Define connection compatibility rules
+const connectionRules: Record<string, { compatible: string[] }> = {
+  "HDMI": { compatible: ["HDMI"] },
+  "RJ45": { compatible: ["RJ45", "CAT6"] },
+  "CAT6": { compatible: ["RJ45", "CAT6"] },
+  "RCA Audio": { compatible: ["RCA Audio"] },
+  "XLR": { compatible: ["XLR"] },
+  "Optical Toslink": { compatible: ["Optical Toslink"] },
+  "Coaxial Digital": { compatible: ["Coaxial Digital"] },
+  "DB9": { compatible: ["DB9"] },
+  "DB15": { compatible: ["DB15"] },
+  "USB-A": { compatible: ["USB-A"] },
+  "USB-B": { compatible: ["USB-B"] },
+  "USB-C": { compatible: ["USB-C"] },
+  "3.5mm Jack": { compatible: ["3.5mm Jack"] },
+  "1/4 Inch Jack": { compatible: ["1/4 Inch Jack"] },
+  "Speaker Wire": { compatible: ["Speaker Wire"] },
+  "BNC": { compatible: ["BNC"] },
+  "Component Video": { compatible: ["Component Video"] },
+  "Composite Video": { compatible: ["Composite Video"] },
+  "S-Video": { compatible: ["S-Video"] },
+  "DisplayPort": { compatible: ["DisplayPort"] },
+  "DVI": { compatible: ["DVI"] },
+  "Fiber Optic": { compatible: ["Fiber Optic"] },
+  "Dante": { compatible: ["Dante"] },
+  "Other": { compatible: ["Other"] }
+};
+
+function getCableType(sourceIO: import("@/types").DeviceIO, targetIO: import("@/types").DeviceIO) {
+  const connectorType = sourceIO.connector_type;
+  
+  // Determine cable gender configuration based on port genders
+  const sourceGender = sourceIO.gender;
+  const targetGender = targetIO.gender;
+  
+  let cableConfig = "";
+  
+  if (sourceGender === "Female" && targetGender === "Female") {
+    cableConfig = "Male-Male";
+  } else if (sourceGender === "Male" && targetGender === "Male") {
+    cableConfig = "Female-Female";
+  } else if (sourceGender === "Male" && targetGender === "Female") {
+    cableConfig = "Male-Female";
+  } else if (sourceGender === "Female" && targetGender === "Male") {
+    cableConfig = "Female-Male";
+  } else if (sourceGender === "N/A" || targetGender === "N/A") {
+    cableConfig = "Standard";
+  }
+  
+  return `${connectorType} ${cableConfig} Cable`;
+}
+
+function checkCompatibility(sourceIO: import("@/types").DeviceIO, targetIO: import("@/types").DeviceIO) {
+  // Check connector type compatibility
+  const rule = connectionRules[sourceIO.connector_type];
+  if (!rule) return { compatible: false, message: "Unknown connector type" };
+
+  if (!rule.compatible.includes(targetIO.connector_type)) {
+    return {
+      compatible: false,
+      message: `${sourceIO.connector_type} cannot connect to ${targetIO.connector_type}. Connector types must match.`
+    };
+  }
+
+  // Check direction compatibility - this is the key change
+  const sourceDir = sourceIO.direction;
+  const targetDir = targetIO.direction;
+  
+  // Valid connections:
+  // Output -> Input
+  // Bidirectional -> anything
+  // anything -> Bidirectional
+  
+  const validConnections = [
+    ["Output", "Input"],
+    ["Bidirectional", "Input"],
+    ["Bidirectional", "Output"],
+    ["Bidirectional", "Bidirectional"],
+    ["Output", "Bidirectional"],
+    ["Input", "Bidirectional"]
+  ];
+  
+  const isValidDirection = validConnections.some(
+    ([s, t]) => sourceDir === s && targetDir === t
+  );
+  
+  if (!isValidDirection) {
+    return {
+      compatible: false,
+      message: `Direction mismatch: Cannot connect ${sourceDir} to ${targetDir}. You can only connect Output to Input, or use Bidirectional ports.`
+    };
+  }
+
+  const cableType = getCableType(sourceIO, targetIO);
+  return { compatible: true, message: "Compatible connection", cableType };
+}
+
+export default function ConnectionPanel({
+  diagramId,
+  selectedDevice,
+  diagramDevices,
+  connections,
+  onClose
+}: { diagramId: string; selectedDevice: DiagramDevice; diagramDevices: DiagramDevice[]; connections: Connection[]; onClose: () => void }) {
+  const [sourceIOId, setSourceIOId] = useState<string>("");
+  const [targetDeviceId, setTargetDeviceId] = useState<string>("");
+  const [targetIOId, setTargetIOId] = useState<string>("");
+  const [cableLabel, setCableLabel] = useState<string>("");
+  const [compatibilityWarning, setCompatibilityWarning] = useState<string | null>(null);
+  const [suggestedCable, setSuggestedCable] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: device } = useQuery<Device | undefined>({
+    queryKey: ['device', selectedDevice.device_id],
+    queryFn: async () => {
+      const devices = await base44.entities.Device.filter({ id: selectedDevice.device_id }) as any[];
+      return devices[0] as Device | undefined;
+    },
+  });
+
+  const deviceIOsQuery = useQuery<DeviceIO[]>({
+    queryKey: ['device-ios', selectedDevice.device_id],
+    queryFn: () => base44.entities.DeviceIO.filter({ device_id: selectedDevice.device_id }) as Promise<DeviceIO[]>,
+  });
+  const deviceIOs: DeviceIO[] = deviceIOsQuery.data ?? [];
+
+  const targetIOsQuery = useQuery<DeviceIO[]>({
+    queryKey: ['target-ios', targetDeviceId],
+    queryFn: () => {
+      if (!targetDeviceId) return [] as any;
+      const targetDiagramDevice = diagramDevices.find(d => d.id === targetDeviceId);
+      if (!targetDiagramDevice) return [] as any;
+      return base44.entities.DeviceIO.filter({ device_id: targetDiagramDevice.device_id }) as Promise<DeviceIO[]>;
+    },
+    enabled: !!targetDeviceId,
+  });
+  const targetIOs: DeviceIO[] = targetIOsQuery.data ?? [];
+
+  const allDevicesQuery = useQuery<Device[]>({
+    queryKey: ['devices'],
+    queryFn: () => base44.entities.Device.list() as Promise<Device[]>,
+  });
+  const allDevices: Device[] = allDevicesQuery.data ?? [];
+
+  const createConnectionMutation = useMutation({
+    mutationFn: (data: any) => base44.entities.Connection.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['connections', diagramId] });
+      resetForm();
+    },
+  });
+
+  const deleteConnectionMutation = useMutation({
+    mutationFn: (id: string) => base44.entities.Connection.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['connections', diagramId] });
+    },
+  });
+
+  const resetForm = () => {
+    setSourceIOId("");
+    setTargetDeviceId("");
+    setTargetIOId("");
+    setCableLabel("");
+    setCompatibilityWarning(null);
+    setSuggestedCable(null);
+  };
+
+  // Check compatibility when both ports are selected
+  useEffect(() => {
+    if (sourceIOId && targetIOId) {
+      const sourceIO = deviceIOs.find(io => io.id === sourceIOId);
+      const targetIO = targetIOs.find(io => io.id === targetIOId);
+      
+      if (sourceIO && targetIO) {
+        const compatibility = checkCompatibility(sourceIO, targetIO);
+        if (!compatibility.compatible) {
+          setCompatibilityWarning(compatibility.message);
+          setSuggestedCable(null);
+        } else {
+          setCompatibilityWarning(null);
+          setSuggestedCable(compatibility.cableType);
+        }
+      }
+    } else {
+      setCompatibilityWarning(null);
+      setSuggestedCable(null);
+    }
+  }, [sourceIOId, targetIOId, deviceIOs, targetIOs]);
+
+  const handleCreateConnection = () => {
+    const sourceIO = deviceIOs.find(io => io.id === sourceIOId);
+    const targetIO = targetIOs.find(io => io.id === targetIOId);
+
+    if (!sourceIO || !targetIO) return;
+
+    const compatibility = checkCompatibility(sourceIO, targetIO);
+    
+    if (!compatibility.compatible) {
+      setCompatibilityWarning(compatibility.message);
+      return;
+    }
+
+    createConnectionMutation.mutate({
+      diagram_id: diagramId,
+      source_diagram_device_id: selectedDevice.id,
+      source_io_id: sourceIOId,
+      target_diagram_device_id: targetDeviceId,
+      target_io_id: targetIOId,
+      cable_label: cableLabel,
+      notes: `Cable needed: ${compatibility.cableType}`
+    });
+  };
+
+  const deviceConnections = connections.filter(
+    c => c.source_diagram_device_id === selectedDevice.id || c.target_diagram_device_id === selectedDevice.id
+  );
+
+  const directionIcons = {
+    Input: <ArrowDown className="w-3 h-3" />,
+    Output: <ArrowUp className="w-3 h-3" />,
+    Bidirectional: <ArrowLeftRight className="w-3 h-3" />
+  };
+
+  const signalColors = {
+    Video: "bg-purple-100 text-purple-800",
+    Audio: "bg-green-100 text-green-800",
+    Data: "bg-blue-100 text-blue-800",
+    Control: "bg-orange-100 text-orange-800",
+    Power: "bg-red-100 text-red-800",
+    Mixed: "bg-gray-100 text-gray-800"
+  };
+
+  return (
+    <div className="w-96 bg-gray-800 border-l border-gray-700 flex flex-col text-white">
+      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Connections</h2>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <X className="w-4 h-4 text-gray-400" />
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {device && (
+          <div>
+            <h3 className="font-semibold mb-2">{device.model}</h3>
+            <p className="text-sm text-gray-400">{device.brand}</p>
+          </div>
+        )}
+
+        <Card className="bg-gray-750 border-gray-600">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-white">Create Connection</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-gray-300">From Port</Label>
+              <Select value={sourceIOId} onValueChange={setSourceIOId}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue placeholder="Select port" />
+                </SelectTrigger>
+                <SelectContent>
+                  {deviceIOs.map((io) => (
+                    <SelectItem key={io.id} value={io.id}>
+                      <div className="flex items-center gap-2">
+                        {directionIcons[io.direction]}
+                        {io.label} - {io.connector_type} {io.gender} ({io.direction})
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">To Device</Label>
+              <Select value={targetDeviceId} onValueChange={(val) => {
+                setTargetDeviceId(val);
+                setTargetIOId("");
+                setCompatibilityWarning(null);
+                setSuggestedCable(null);
+              }}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue placeholder="Select device" />
+                </SelectTrigger>
+                <SelectContent>
+                  {diagramDevices
+                    .filter(d => d.id !== selectedDevice.id)
+                    .map((dd) => {
+                      const dev = allDevices.find(d => d.id === dd.device_id);
+                      return (
+                        <SelectItem key={dd.id} value={dd.id}>
+                          {dev?.model || 'Unknown'}
+                        </SelectItem>
+                      );
+                    })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {targetDeviceId && (
+              <div className="space-y-2">
+                <Label className="text-gray-300">To Port</Label>
+                <Select value={targetIOId} onValueChange={setTargetIOId}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue placeholder="Select port" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {targetIOs.map((io) => (
+                      <SelectItem key={io.id} value={io.id}>
+                        <div className="flex items-center gap-2">
+                          {directionIcons[io.direction]}
+                          {io.label} - {io.connector_type} {io.gender} ({io.direction})
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {suggestedCable && !compatibilityWarning && (
+              <Alert className="bg-green-900 border-green-700">
+                <AlertDescription className="text-green-200">
+                  ✓ Cable needed: <strong>{suggestedCable}</strong>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-gray-300">Cable Label (Optional)</Label>
+              <Input
+                value={cableLabel}
+                onChange={(e) => setCableLabel(e.target.value)}
+                placeholder="e.g., Cable #1"
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+
+            {compatibilityWarning && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{compatibilityWarning}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button
+              onClick={handleCreateConnection}
+              disabled={!sourceIOId || !targetIOId || !!compatibilityWarning || createConnectionMutation.isPending}
+              className="w-full bg-cyan-600 hover:bg-cyan-700"
+            >
+              {createConnectionMutation.isPending ? 'Creating...' : 'Create Connection'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <div>
+          <h3 className="font-semibold mb-3">Existing Connections</h3>
+          <div className="space-y-2">
+            {deviceConnections.map((conn) => {
+              const sourceIO = deviceIOs.find(io => io.id === conn.source_io_id);
+              return (
+                <Card key={conn.id} className="bg-gray-750 border-gray-600">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
+                          {sourceIO?.label || 'Unknown Port'}
+                        </p>
+                        {conn.cable_label && (
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {conn.cable_label}
+                          </Badge>
+                        )}
+                        {conn.notes && (
+                          <p className="text-xs text-gray-400 mt-1">{conn.notes}</p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm('Delete this connection?')) {
+                            deleteConnectionMutation.mutate(conn.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {deviceConnections.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-4">
+                No connections yet
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
