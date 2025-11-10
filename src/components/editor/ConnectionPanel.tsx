@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -126,29 +126,26 @@ export default function ConnectionPanel({
     queryFn: () => api.devices.get(selectedDevice.device_id),
   });
 
-  const deviceIOsQuery = useQuery<DeviceIO[]>({
+  const { data: deviceIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['device-ios', selectedDevice.device_id],
-    queryFn: () => api.deviceIOs.list(selectedDevice.device_id),
+    queryFn: (): Promise<DeviceIO[]> => api.deviceIOs.list(selectedDevice.device_id),
   });
-  const deviceIOs: DeviceIO[] = deviceIOsQuery.data ?? [];
 
-  const targetIOsQuery = useQuery<DeviceIO[]>({
+  const { data: targetIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['target-ios', targetDeviceId],
-    queryFn: () => {
-      if (!targetDeviceId) return [];
+    queryFn: (): Promise<DeviceIO[]> => {
+      if (!targetDeviceId) return Promise.resolve([]);
       const targetDiagramDevice = diagramDevices.find(d => d.id === targetDeviceId);
-      if (!targetDiagramDevice) return [];
+      if (!targetDiagramDevice) return Promise.resolve([]);
       return api.deviceIOs.list(targetDiagramDevice.device_id);
     },
     enabled: !!targetDeviceId,
   });
-  const targetIOs: DeviceIO[] = targetIOsQuery.data ?? [];
 
-  const allDevicesQuery = useQuery<Device[]>({
+  const { data: allDevices = [] } = useQuery<Device[]>({
     queryKey: ['devices'],
-    queryFn: () => api.devices.list(),
+    queryFn: (): Promise<Device[]> => api.devices.list(),
   });
-  const allDevices: Device[] = allDevicesQuery.data ?? [];
 
   const { data: allIOs = [] } = useQuery<DeviceIO[]>({
     queryKey: ['all-ios'],
@@ -163,7 +160,7 @@ export default function ConnectionPanel({
     },
   });
 
-  const deleteConnectionMutation = useMutation({
+  const deleteConnectionMutation = useMutation<void, Error, string>({
     mutationFn: (id: string) => api.connections.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections', diagramId] });
@@ -211,15 +208,6 @@ export default function ConnectionPanel({
     Input: <ArrowDown className="w-3 h-3" />,
     Output: <ArrowUp className="w-3 h-3" />,
     Bidirectional: <ArrowLeftRight className="w-3 h-3" />
-  };
-
-  const signalColors = {
-    Video: "bg-purple-100 text-purple-800",
-    Audio: "bg-green-100 text-green-800",
-    Data: "bg-blue-100 text-blue-800",
-    Control: "bg-orange-100 text-orange-800",
-    Power: "bg-red-100 text-red-800",
-    Mixed: "bg-gray-100 text-gray-800"
   };
 
   return (
@@ -327,7 +315,7 @@ export default function ConnectionPanel({
             </div>
 
             {compatibility && !compatibility.compatible && (
-              <Alert variant="destructive">
+              <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{compatibility.message}</AlertDescription>
               </Alert>
