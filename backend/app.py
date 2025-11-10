@@ -287,10 +287,15 @@ def uploaded_file(filename):
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
+    # Serve built assets if they exist, else fall back to SPA index.html
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
+
+# Fallback for any 404s (e.g., deep-linking to SPA routes)
+@app.errorhandler(404)
+def spa_fallback(_e):
+    return send_from_directory(app.static_folder, 'index.html')
 
 
 if __name__ == '__main__':
