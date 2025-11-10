@@ -29,7 +29,7 @@ const navigationItems = [
   },
 ];
 
-export default function Layout({ children, currentPageName }) {
+export default function Layout({ children, currentPageName }: { children: React.ReactNode, currentPageName: string }) {
   const location = useLocation();
 
   return (

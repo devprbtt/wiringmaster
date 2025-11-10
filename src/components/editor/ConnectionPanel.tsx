@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { X, Trash2, AlertCircle, ArrowDown, ArrowUp, ArrowLeftRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type { DiagramDevice, Device, DeviceIO, Connection } from "@/types";
+import type { DiagramDevice, Device, DeviceIO, Connection, CreateConnectionPayload } from "@/types";
 
 // Define connection compatibility rules
 const connectionRules: Record<string, { compatible: string[] }> = {
@@ -119,8 +119,6 @@ export default function ConnectionPanel({
   const [targetDeviceId, setTargetDeviceId] = useState<string>("");
   const [targetIOId, setTargetIOId] = useState<string>("");
   const [cableLabel, setCableLabel] = useState<string>("");
-  const [compatibilityWarning, setCompatibilityWarning] = useState<string | null>(null);
-  const [suggestedCable, setSuggestedCable] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: device } = useQuery<Device | undefined>({
@@ -152,8 +150,13 @@ export default function ConnectionPanel({
   });
   const allDevices: Device[] = allDevicesQuery.data ?? [];
 
+  const { data: allIOs = [] } = useQuery<DeviceIO[]>({
+    queryKey: ['all-ios'],
+    queryFn: () => api.deviceIOs.list(),
+  });
+
   const createConnectionMutation = useMutation({
-    mutationFn: (data: any) => api.connections.create(data),
+    mutationFn: (data: CreateConnectionPayload) => api.connections.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections', diagramId] });
       resetForm();
@@ -172,44 +175,22 @@ export default function ConnectionPanel({
     setTargetDeviceId("");
     setTargetIOId("");
     setCableLabel("");
-    setCompatibilityWarning(null);
-    setSuggestedCable(null);
   };
 
-  // Check compatibility when both ports are selected
-  useEffect(() => {
-    if (sourceIOId && targetIOId) {
-      const sourceIO = deviceIOs.find(io => io.id === sourceIOId);
-      const targetIO = targetIOs.find(io => io.id === targetIOId);
-      
-      if (sourceIO && targetIO) {
-        const compatibility = checkCompatibility(sourceIO, targetIO);
-        if (!compatibility.compatible) {
-          setCompatibilityWarning(compatibility.message);
-          setSuggestedCable(null);
-        } else {
-          setCompatibilityWarning(null);
-          setSuggestedCable(compatibility.cableType);
-        }
-      }
-    } else {
-      setCompatibilityWarning(null);
-      setSuggestedCable(null);
+  const compatibility = useMemo(() => {
+    if (!sourceIOId || !targetIOId) return null;
+
+    const sourceIO = deviceIOs.find(io => io.id === sourceIOId);
+    const targetIO = targetIOs.find(io => io.id === targetIOId);
+    
+    if (sourceIO && targetIO) {
+      return checkCompatibility(sourceIO, targetIO);
     }
+    return null;
   }, [sourceIOId, targetIOId, deviceIOs, targetIOs]);
 
   const handleCreateConnection = () => {
-    const sourceIO = deviceIOs.find(io => io.id === sourceIOId);
-    const targetIO = targetIOs.find(io => io.id === targetIOId);
-
-    if (!sourceIO || !targetIO) return;
-
-    const compatibility = checkCompatibility(sourceIO, targetIO);
-    
-    if (!compatibility.compatible) {
-      setCompatibilityWarning(compatibility.message);
-      return;
-    }
+    if (!compatibility || !compatibility.compatible) return;
 
     createConnectionMutation.mutate({
       diagram_id: diagramId,
@@ -287,8 +268,6 @@ export default function ConnectionPanel({
               <Select value={targetDeviceId} onValueChange={(val) => {
                 setTargetDeviceId(val);
                 setTargetIOId("");
-                setCompatibilityWarning(null);
-                setSuggestedCable(null);
               }}>
                 <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
                   <SelectValue placeholder="Select device" />
@@ -329,10 +308,10 @@ export default function ConnectionPanel({
               </div>
             )}
 
-            {suggestedCable && !compatibilityWarning && (
+            {compatibility?.compatible && (
               <Alert className="bg-green-900 border-green-700">
                 <AlertDescription className="text-green-200">
-                  ✓ Cable needed: <strong>{suggestedCable}</strong>
+                  ✓ Cable needed: <strong>{compatibility.cableType}</strong>
                 </AlertDescription>
               </Alert>
             )}
@@ -347,16 +326,16 @@ export default function ConnectionPanel({
               />
             </div>
 
-            {compatibilityWarning && (
+            {compatibility && !compatibility.compatible && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{compatibilityWarning}</AlertDescription>
+                <AlertDescription>{compatibility.message}</AlertDescription>
               </Alert>
             )}
 
             <Button
               onClick={handleCreateConnection}
-              disabled={!sourceIOId || !targetIOId || !!compatibilityWarning || createConnectionMutation.isPending}
+              disabled={!sourceIOId || !targetIOId || !compatibility?.compatible || createConnectionMutation.isPending}
               className="w-full bg-cyan-600 hover:bg-cyan-700"
             >
               {createConnectionMutation.isPending ? 'Creating...' : 'Create Connection'}
@@ -368,17 +347,32 @@ export default function ConnectionPanel({
           <h3 className="font-semibold mb-3">Existing Connections</h3>
           <div className="space-y-2">
             {deviceConnections.map((conn) => {
-              const sourceIO = deviceIOs.find(io => io.id === conn.source_io_id);
+              const isSource = conn.source_diagram_device_id === selectedDevice.id;
+
+              const ioIdOnThisDevice = isSource ? conn.source_io_id : conn.target_io_id;
+              const ioOnThisDevice = allIOs.find(io => io.id === ioIdOnThisDevice);
+
+              const otherDiagramDeviceId = isSource ? conn.target_diagram_device_id : conn.source_diagram_device_id;
+              const otherDiagramDevice = diagramDevices.find(dd => dd.id === otherDiagramDeviceId);
+              const otherDevice = allDevices.find(d => d.id === otherDiagramDevice?.device_id);
+
+              const ioIdOnOtherDevice = isSource ? conn.target_io_id : conn.source_io_id;
+              const ioOnOtherDevice = allIOs.find(io => io.id === ioIdOnOtherDevice);
+
               return (
                 <Card key={conn.id} className="bg-gray-750 border-gray-600">
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
-                          {sourceIO?.label || 'Unknown Port'}
+                        <p className="text-sm font-medium text-white truncate flex items-center gap-2">
+                          {isSource ? <ArrowUp className="w-4 h-4 text-green-400" /> : <ArrowDown className="w-4 h-4 text-yellow-400" />}
+                          {ioOnThisDevice?.label || 'Unknown Port'}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {isSource ? 'to' : 'from'} {otherDevice?.model || 'Unknown Device'} ({ioOnOtherDevice?.label || 'Unknown Port'})
                         </p>
                         {conn.cable_label && (
-                          <Badge variant="outline" className="text-xs mt-1">
+                          <Badge variant="outline" className="text-xs mt-2">
                             {conn.cable_label}
                           </Badge>
                         )}
