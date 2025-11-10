@@ -174,6 +174,15 @@ export default function ConnectionPanel({
     setCableLabel("");
   };
 
+  const occupiedIOs = useMemo(() => {
+    const occupiedIds = new Set<string>();
+    connections.forEach(conn => {
+      occupiedIds.add(conn.source_io_id);
+      occupiedIds.add(conn.target_io_id);
+    });
+    return occupiedIds;
+  }, [connections]);
+
   const compatibility = useMemo(() => {
     if (!sourceIOId || !targetIOId) return null;
 
@@ -240,10 +249,15 @@ export default function ConnectionPanel({
                 </SelectTrigger>
                 <SelectContent>
                   {deviceIOs.map((io) => (
-                    <SelectItem key={io.id} value={io.id}>
+                    <SelectItem
+                      key={io.id}
+                      value={io.id}
+                      disabled={occupiedIOs.has(io.id)}
+                    >
                       <div className="flex items-center gap-2">
                         {directionIcons[io.direction]}
                         {io.label} - {io.connector_type} {io.gender} ({io.direction})
+                        {occupiedIOs.has(io.id) && <Badge variant="destructive" className="ml-auto">Used</Badge>}
                       </div>
                     </SelectItem>
                   ))}
@@ -284,10 +298,15 @@ export default function ConnectionPanel({
                   </SelectTrigger>
                   <SelectContent>
                     {targetIOs.map((io) => (
-                      <SelectItem key={io.id} value={io.id}>
+                      <SelectItem
+                        key={io.id}
+                        value={io.id}
+                        disabled={occupiedIOs.has(io.id)}
+                      >
                         <div className="flex items-center gap-2">
                           {directionIcons[io.direction]}
                           {io.label} - {io.connector_type} {io.gender} ({io.direction})
+                          {occupiedIOs.has(io.id) && <Badge variant="destructive" className="ml-auto">Used</Badge>}
                         </div>
                       </SelectItem>
                     ))}

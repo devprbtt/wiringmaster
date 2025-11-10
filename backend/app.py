@@ -17,6 +17,17 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Initialize database
 init_db(app)
 
+def seed_db():
+    with app.app_context():
+        if Device.query.count() == 0:
+            device1 = Device(id='1', brand='Cisco', model='Catalyst 2960', category='Switch', image_url='https://www.cisco.com/c/en/us/products/collateral/switches/catalyst-2960-series-switches/prod_white_paper0900aecd806ea75f.html', description='A 24-port switch.')
+            db.session.add(device1)
+            db.session.commit()
+        if Diagram.query.count() == 0:
+            diagram1 = Diagram(id='1', name='Sample Diagram', client_name='Jules')
+            db.session.add(diagram1)
+            db.session.commit()
+
 # Helper function to generate UUID
 def generate_id():
     return str(uuid.uuid4())
@@ -299,4 +310,5 @@ def spa_fallback(_e):
 
 
 if __name__ == '__main__':
+    seed_db()
     app.run(debug=True, port=5000)

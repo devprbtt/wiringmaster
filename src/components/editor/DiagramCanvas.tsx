@@ -1,18 +1,25 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { ZoomIn, ZoomOut } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { getColorFromString } from "@/lib/colors";
 import DeviceBlock from "./DeviceBlock";
 import type { DiagramDevice, Device, DeviceIO, Connection } from "@/types";
 
 export default function DiagramCanvas({
   diagramId,
   diagramDevices,
+  setDiagramDevices,
   connections,
   selectedDevice,
   onSelectDevice
 }: {
   diagramId: string;
   diagramDevices: DiagramDevice[];
+  setDiagramDevices: (devices: DiagramDevice[]) => void;
   connections: Connection[];
   selectedDevice: DiagramDevice | null;
   onSelectDevice: (d: DiagramDevice | null) => void;
@@ -23,6 +30,9 @@ export default function DiagramCanvas({
     startX: number;
     startY: number;
   } | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: devices = [] } = useQuery<Device[]>({
     queryKey: ['devices'],
@@ -45,30 +55,36 @@ export default function DiagramCanvas({
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement>, diagramDevice: DiagramDevice) => {
     setDragging({
       id: diagramDevice.id,
-      startX: e.clientX - diagramDevice.position_x,
-      startY: e.clientY - diagramDevice.position_y
+      startX: e.clientX / zoom - diagramDevice.position_x,
+      startY: e.clientY / zoom - diagramDevice.position_y,
     });
   };
 
   const handleDrag = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!dragging || e.clientX === 0) return;
+
+    const newX = e.clientX / zoom - dragging.startX;
+    const newY = e.clientY / zoom - dragging.startY;
     
-    const newX = e.clientX - dragging.startX;
-    const newY = e.clientY - dragging.startY;
-    
-    const element = document.getElementById(`device-${dragging.id}`);
-    if (element) {
-      element.style.left = `${newX}px`;
-      element.style.top = `${newY}px`;
-    }
+    // Update the position of the dragged element in the state
+    setDiagramDevices(prevDevices =>
+      prevDevices.map(d =>
+        d.id === dragging.id ? { ...d, position_x: newX, position_y: newY } : d
+      )
+    );
   };
 
   const handleDragEnd = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!dragging) return;
-    
-    const newX = Math.max(0, e.clientX - dragging.startX);
-    const newY = Math.max(0, e.clientY - dragging.startY);
-    
+
+    let newX = Math.max(0, e.clientX / zoom - dragging.startX);
+    let newY = Math.max(0, e.clientY / zoom - dragging.startY);
+
+    if (snapToGrid) {
+      newX = Math.round(newX / 20) * 20;
+      newY = Math.round(newY / 20) * 20;
+    }
+
     updatePositionMutation.mutate({
       id: dragging.id,
       position_x: newX,
@@ -125,27 +141,32 @@ export default function DiagramCanvas({
 
   return (
     <div
+      ref={canvasContainerRef}
       className="w-full h-full bg-gray-900 relative overflow-hidden"
       onMouseMove={handleDrag}
       onMouseUp={handleDragEnd}
-      style={{ cursor: dragging ? 'grabbing' : 'default' }}
+      style={{ cursor:dragging ? 'grabbing' : 'default' }}
     >
-      {/* Grid background */}
       <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: '20px 20px'
-        }}
-      />
+        className="absolute top-0 left-0"
+        style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+      >
+        {/* Grid background */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px'
+          }}
+        />
 
-      {/* SVG for connections */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
-        <defs>
-          <marker
+        {/* SVG for connections */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
+          <defs>
+            <marker
             id="arrowhead"
             markerWidth="10"
             markerHeight="10"
@@ -164,6 +185,7 @@ export default function DiagramCanvas({
             if (!sourceDev || !targetDev) return null;
             
             const path = getConnectionPath(sourceDev, targetDev, index, conns.length);
+            const color = getColorFromString(conn.id);
             
             // Get IO information for tooltip
             const sourceIO = allIOs.find(io => io.id === conn.source_io_id);
@@ -173,12 +195,12 @@ export default function DiagramCanvas({
               <g key={conn.id}>
                 <path
                   d={path}
-                  stroke="#3b82f6"
+                  stroke={color}
                   strokeWidth="3"
                   fill="none"
                   markerEnd="url(#arrowhead)"
                   className="hover:stroke-cyan-400 transition-colors"
-                  style={{ filter: 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.5))' }}
+                  style={{ filter: `drop-shadow(0 0 4px ${color})` }}
                 >
                   <title>
                     {sourceIO?.label || 'Unknown'} → {targetIO?.label || 'Unknown'}
@@ -234,6 +256,27 @@ export default function DiagramCanvas({
           </div>
         </div>
       )}
+      </div>
+      <div className="absolute bottom-4 right-4 flex items-center gap-2">
+        <Button onClick={() => setZoom(z => Math.max(0.1, z - 0.1))} variant="outline" size="sm" className="bg-gray-800 border-gray-700">
+          <ZoomOut className="w-4 h-4" />
+        </Button>
+        <div className="bg-gray-800 border border-gray-700 text-white text-sm px-3 py-1 rounded">
+          {Math.round(zoom * 100)}%
+        </div>
+        <Button onClick={() => setZoom(z => Math.min(2, z + 0.1))} variant="outline" size="sm" className="bg-gray-800 border-gray-700">
+          <ZoomIn className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="absolute bottom-4 left-4 flex items-center gap-2">
+        <Switch
+          id="snap-to-grid"
+          checked={snapToGrid}
+          onCheckedChange={setSnapToGrid}
+          className="bg-gray-800 border-gray-700"
+        />
+        <Label htmlFor="snap-to-grid" className="text-white">Snap to Grid</Label>
+      </div>
     </div>
   );
 }

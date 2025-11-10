@@ -48,7 +48,7 @@ export default function DeviceBlock({
             <img
               src={device.image_url}
               alt={device.model}
-              className="w-12 h-12 object-cover rounded"
+              className="w-12 h-12 object-contain rounded"
             />
           ) : (
             <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
