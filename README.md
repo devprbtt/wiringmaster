@@ -1,5 +1,43 @@
 # React + TypeScript + Vite
 
+## Running the Application
+
+To run this application, you need to have both the frontend and backend servers running.
+
+### 1. Frontend
+
+First, install the necessary dependencies:
+
+```bash
+npm install
+```
+
+Then, build the frontend application:
+
+```bash
+npm run build
+```
+
+This will create a `dist` directory with the static assets.
+
+### 2. Backend
+
+Next, install the backend dependencies:
+
+```bash
+pip install -r backend/requirements.txt
+```
+
+Finally, run the backend server:
+
+```bash
+python backend/app.py
+```
+
+The application will be available at [http://localhost:5000](http://localhost:5000).
+
+---
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
