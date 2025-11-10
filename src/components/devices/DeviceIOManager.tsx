@@ -36,7 +36,7 @@ export default function DeviceIOManager({ device, onClose }: Props) {
 
   const { data: ios = [] } = useQuery<DeviceIO[]>({
     queryKey: ['device-ios', device.id],
-    queryFn: (): Promise<DeviceIO[]> => base44.entities.DeviceIO.filter({ device_id: device.id }),
+    queryFn: () => base44.entities.DeviceIO.filter({ device_id: device.id }) as Promise<DeviceIO[]>,
   });
 
   const saveMutation = useMutation({
