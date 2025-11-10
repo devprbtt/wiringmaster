@@ -16,7 +16,7 @@ export default function DiagramEditor() {
   const diagramId = urlParams.get('id');
   const queryClient = useQueryClient();
 
-  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [selectedDevice, setSelectedDevice] = useState<DiagramDevice | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
 
   const { data: diagram } = useQuery<Diagram | undefined>({
@@ -47,15 +47,24 @@ export default function DiagramEditor() {
     queryFn: () => api.deviceIOs.list(),
   });
 
-  const addDeviceMutation = useMutation({
-    mutationFn: (data) => api.diagramDevices.create(data),
+  type CreateDiagramDeviceVars = {
+    diagram_id: string;
+    device_id: string;
+    position_x: number;
+    position_y: number;
+    rotation: number;
+  };
+
+  const addDeviceMutation = useMutation<DiagramDevice, Error, CreateDiagramDeviceVars>({
+    mutationFn: (data: CreateDiagramDeviceVars) => api.diagramDevices.create(data) as Promise<DiagramDevice>,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diagram-devices', diagramId] });
       setShowLibrary(false);
     },
   });
 
-  const handleAddDevice = (device) => {
+  const handleAddDevice = (device: Device) => {
+    if (!diagramId) return;
     addDeviceMutation.mutate({
       diagram_id: diagramId,
       device_id: device.id,
@@ -193,17 +202,17 @@ export default function DiagramEditor() {
 
         <div className="flex-1 relative">
           <DiagramCanvas
-            diagramId={diagramId}
+            diagramId={diagramId!}
             diagramDevices={diagramDevices}
             connections={connections}
             selectedDevice={selectedDevice}
-            onSelectDevice={setSelectedDevice}
+            onSelectDevice={(d) => setSelectedDevice(d)}
           />
         </div>
 
         {selectedDevice && (
           <ConnectionPanel
-            diagramId={diagramId}
+            diagramId={diagramId!}
             selectedDevice={selectedDevice}
             diagramDevices={diagramDevices}
             connections={connections}

@@ -11,6 +11,7 @@ import { useSidebar } from "@/hooks/use-sidebar"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { SidebarContext } from "@/contexts/sidebar-context"
+import type { SidebarContextProps } from "@/contexts/sidebar-context"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {

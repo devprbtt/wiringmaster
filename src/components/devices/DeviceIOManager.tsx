@@ -25,7 +25,13 @@ type Props = { device: Device; onClose: () => void };
 export default function DeviceIOManager({ device, onClose }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingIO, setEditingIO] = useState<DeviceIO | null>(null);
-  const [formData, setFormData] = useState<{ label: string; connector_type: string; gender: string; direction: string; signal_type: string }>({
+  const [formData, setFormData] = useState<{
+    label: string;
+    connector_type: string;
+    gender: 'Male' | 'Female' | 'N/A';
+    direction: 'Input' | 'Output' | 'Bidirectional';
+    signal_type: string;
+  }>({
     label: "",
     connector_type: "",
     gender: "Female",
@@ -224,7 +230,7 @@ export default function DeviceIOManager({ device, onClose }: Props) {
                     <Label htmlFor="gender">Gender *</Label>
                     <Select
                       value={formData.gender}
-                      onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                      onValueChange={(value) => setFormData({ ...formData, gender: value as 'Male' | 'Female' | 'N/A' })}
                       required
                     >
                       <SelectTrigger>
@@ -242,7 +248,7 @@ export default function DeviceIOManager({ device, onClose }: Props) {
                     <Label htmlFor="direction">Direction *</Label>
                     <Select
                       value={formData.direction}
-                      onValueChange={(value) => setFormData({ ...formData, direction: value })}
+                      onValueChange={(value) => setFormData({ ...formData, direction: value as 'Input' | 'Output' | 'Bidirectional' })}
                       required
                     >
                       <SelectTrigger>

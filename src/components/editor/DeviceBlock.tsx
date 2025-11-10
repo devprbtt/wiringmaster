@@ -2,6 +2,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Image as ImageIcon, GripVertical } from "lucide-react";
+import type { DiagramDevice, Device } from "@/types";
 
 export default function DeviceBlock({
   diagramDevice,
@@ -9,6 +10,12 @@ export default function DeviceBlock({
   isSelected,
   onSelect,
   onDragStart
+}: {
+  diagramDevice: DiagramDevice;
+  device: Device;
+  isSelected: boolean;
+  onSelect: () => void;
+  onDragStart: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
   return (
     <Card

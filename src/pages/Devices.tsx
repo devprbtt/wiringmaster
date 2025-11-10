@@ -23,8 +23,8 @@ export default function Devices() {
     },
   });
 
-  const deleteDeviceMutation = useMutation({
-    mutationFn: (id) => api.devices.delete(id),
+  const deleteDeviceMutation = useMutation<void, Error, string>({
+    mutationFn: (id: string) => api.devices.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] });
     },
@@ -50,7 +50,9 @@ export default function Devices() {
     "Display": "bg-pink-100 text-pink-800",
     "Source Device": "bg-yellow-100 text-yellow-800",
     "Other": "bg-gray-100 text-gray-800",
-  };
+  } as const;
+
+  const getCategoryColor = (cat: string) => categoryColors[cat as keyof typeof categoryColors] ?? categoryColors["Other"];
 
   if (managingIODevice) {
     return (
@@ -113,7 +115,7 @@ export default function Devices() {
                     <CardTitle className="text-lg mb-1">{device.model}</CardTitle>
                     <p className="text-sm text-gray-600 font-medium">{device.brand}</p>
                   </div>
-                  <Badge className={categoryColors[device.category]}>
+                  <Badge className={getCategoryColor(device.category)}>
                     {device.category}
                   </Badge>
                 </div>

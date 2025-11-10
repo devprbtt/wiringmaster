@@ -23,8 +23,8 @@ export default function Diagrams() {
     },
   });
 
-  const deleteDiagramMutation = useMutation({
-    mutationFn: (id) => api.diagrams.delete(id),
+  const deleteDiagramMutation = useMutation<void, Error, string>({
+    mutationFn: (id: string) => api.diagrams.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diagrams'] });
     },

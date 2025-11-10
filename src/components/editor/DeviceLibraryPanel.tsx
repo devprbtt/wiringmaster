@@ -35,7 +35,9 @@ export default function DeviceLibraryPanel({ onSelectDevice, onClose }: { onSele
     "Display": "bg-pink-100 text-pink-800",
     "Source Device": "bg-yellow-100 text-yellow-800",
     "Other": "bg-gray-100 text-gray-800",
-  };
+  } as const;
+
+  const getCategoryColor = (cat: string) => categoryColors[cat as keyof typeof categoryColors] ?? categoryColors["Other"];
 
   return (
     <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
@@ -81,7 +83,7 @@ export default function DeviceLibraryPanel({ onSelectDevice, onClose }: { onSele
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm text-white truncate">{device.model}</h3>
                   <p className="text-xs text-gray-400 truncate">{device.brand}</p>
-                  <Badge className={`${categoryColors[device.category]} text-xs mt-1`}>
+                  <Badge className={`${getCategoryColor(device.category)} text-xs mt-1`}>
                     {device.category}
                   </Badge>
                 </div>

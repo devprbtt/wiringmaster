@@ -83,7 +83,12 @@ export default function DiagramCanvas({
   };
 
   // Calculate connection line path with offset to prevent overlap
-  const getConnectionPath = (sourceDev, targetDev, connectionIndex, totalConnectionsBetween) => {
+  const getConnectionPath = (
+    sourceDev: DiagramDevice,
+    targetDev: DiagramDevice,
+    connectionIndex: number,
+    totalConnectionsBetween: number
+  ): string => {
     const sourceX = sourceDev.position_x + 150;
     const sourceY = sourceDev.position_y + 50;
     const targetX = targetDev.position_x + 150;
@@ -109,11 +114,11 @@ export default function DiagramCanvas({
   };
 
   // Group connections between same devices
-  const connectionGroups = {};
-  connections.forEach((conn) => {
+  const connectionGroups: Record<string, Connection[]> = {};
+  connections.forEach((conn: Connection) => {
     const key = [conn.source_diagram_device_id, conn.target_diagram_device_id].sort().join('-');
     if (!connectionGroups[key]) {
-      connectionGroups[key] = [];
+      connectionGroups[key] = [] as Connection[];
     }
     connectionGroups[key].push(conn);
   });
@@ -151,8 +156,8 @@ export default function DiagramCanvas({
             <polygon points="0 0, 10 3, 0 6" fill="#3b82f6" />
           </marker>
         </defs>
-        {Object.values(connectionGroups).map((conns: Connection[]) => {
-          return conns.map((conn, index) => {
+        {Object.values(connectionGroups).map((conns) => {
+          return (conns as Connection[]).map((conn, index) => {
             const sourceDev = diagramDevices.find(d => d.id === conn.source_diagram_device_id);
             const targetDev = diagramDevices.find(d => d.id === conn.target_diagram_device_id);
             
