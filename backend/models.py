@@ -15,7 +15,7 @@ class Device(db.Model):
     updated_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    ios = db.relationship('DeviceIO', backref__='device', lazy=True, cascade='all, delete-orphan')
+    ios = db.relationship('DeviceIO', backref='device', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -68,8 +68,8 @@ class Diagram(db.Model):
     updated_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    diagram_devices = db.relationship('DiagramDevice', backref__='diagram', lazy=True, cascade='all, delete-orphan')
-    connections = db.relationship('Connection', backref__='diagram', lazy=True, cascade='all, delete-orphan')
+    diagram_devices = db.relationship('DiagramDevice', backref='diagram', lazy=True, cascade='all, delete-orphan')
+    connections = db.relationship('Connection', backref='diagram', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
