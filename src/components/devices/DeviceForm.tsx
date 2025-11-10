@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Upload, Loader2 } from "lucide-react";
 import { api } from "@/api/client";
-import type { Device } from "@/types";
+import type { Device, CreateDevicePayload, UpdateDevicePayload } from "@/types";
 
 const categories = [
   "Receiver",
@@ -50,11 +50,11 @@ export default function DeviceForm({ device, onClose }: DeviceFormProps) {
   const queryClient = useQueryClient();
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: (data: CreateDevicePayload | UpdateDevicePayload) => {
       if (device) {
-        return api.devices.update(device.id, data);
+        return api.devices.update(device.id, data as UpdateDevicePayload);
       }
-      return api.devices.create(data);
+      return api.devices.create(data as CreateDevicePayload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] });

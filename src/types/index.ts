@@ -9,8 +9,14 @@ export interface Device {
   updated_date: string;
 }
 
+export type CreateDevicePayload = Omit<Device, 'id' | 'created_date' | 'updated_date'>;
+export type UpdateDevicePayload = Partial<CreateDevicePayload>;
 export type CreateConnectionPayload = Omit<Connection, 'id' | 'created_date' | 'updated_date'>;
 export type CreateDeviceIOPayload = Omit<DeviceIO, 'id' | 'device_id' | 'created_date' | 'updated_date'>;
+export type CreateDiagramPayload = Omit<Diagram, 'id' | 'created_date' | 'updated_date'>;
+export type UpdateDiagramPayload = Partial<CreateDiagramPayload>;
+export type CreateDiagramDevicePayload = Omit<DiagramDevice, 'id' | 'created_date' | 'updated_date'>;
+export type UpdateDiagramDevicePayload = Partial<CreateDiagramDevicePayload>;
 
 export interface DeviceIO {
   id: string;
