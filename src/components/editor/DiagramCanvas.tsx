@@ -151,7 +151,7 @@ export default function DiagramCanvas({
             <polygon points="0 0, 10 3, 0 6" fill="#3b82f6" />
           </marker>
         </defs>
-        {Object.entries(connectionGroups).map(([key, conns]) => {
+        {Object.values(connectionGroups).map((conns: Connection[]) => {
           return conns.map((conn, index) => {
             const sourceDev = diagramDevices.find(d => d.id === conn.source_diagram_device_id);
             const targetDev = diagramDevices.find(d => d.id === conn.target_diagram_device_id);

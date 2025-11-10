@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Cable, Box, FileText, Zap } from "lucide-react";
+import { Cable, Box, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -29,7 +29,7 @@ const navigationItems = [
   },
 ];
 
-export default function Layout({ children, currentPageName }: { children: React.ReactNode, currentPageName: string }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   return (

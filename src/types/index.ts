@@ -9,6 +9,8 @@ export interface Device {
   updated_date: string;
 }
 
+export type CreateConnectionPayload = Omit<Connection, 'id' | 'created_date' | 'updated_date'>;
+
 export interface DeviceIO {
   id: string;
   device_id: string;
