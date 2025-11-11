@@ -7,10 +7,47 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node / build artifacts
 node_modules
 dist
 dist-ssr
 *.local
+*.tsbuildinfo
+coverage
+.nyc_output
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+.env/
+ENV/
+pip-wheel-metadata/
+**/__pycache__/
+**/venv/
+**/.venv/
+
+# Backend runtime artifacts
+backend/instance/
+backend/uploads/
+backend/static/assets/
+backend/static/index.html
+backend/venv/
+backend/__pycache__/
+*.db
 
 # Editor directories and files
 .vscode/*

@@ -1,18 +1,37 @@
 import { api } from '@/api/client';
-import { Device, DeviceIO, Diagram, CreateDevicePayload, UpdateDevicePayload, CreateDeviceIOPayload, CreateDiagramPayload, UpdateDiagramPayload, CreateDiagramDevicePayload, UpdateDiagramDevicePayload, CreateConnectionPayload } from '@/types';
+import type { Device, DeviceIO, Diagram, CreateDevicePayload, UpdateDevicePayload, CreateDeviceIOPayload, CreateDiagramPayload, UpdateDiagramPayload, CreateDiagramDevicePayload, UpdateDiagramDevicePayload, CreateConnectionPayload } from '@/types';
 
 type OrderKey = '-created_date' | 'created_date' | '-updated_date' | 'updated_date' | string | undefined;
+type SortableValue = string | number | boolean | null | undefined;
+
+function getSortableValue(item: Device | Diagram, key?: string): SortableValue {
+  if (!key) return undefined;
+  // Cast through unknown so we can treat the object as an indexable record just for sorting.
+  return (item as unknown as Record<string, SortableValue>)[key];
+}
+
+function toComparableValue(value: SortableValue): string | number {
+  if (typeof value === 'string' && /\d{4}-\d{2}-\d{2}/.test(value)) {
+    return Date.parse(value);
+  }
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+  if (value == null) return '';
+  return value;
+}
 
 function sortByKey<T extends Device | Diagram>(items: T[], order?: OrderKey): T[] {
   if (!order) return items;
   const desc = order.startsWith('-');
   const key = desc ? order.slice(1) : order;
   return [...items].sort((a, b) => {
-    const av = a?.[key];
-    const bv = b?.[key];
+    const av = getSortableValue(a, key);
+    const bv = getSortableValue(b, key);
     if (av === bv) return 0;
-    const aVal = typeof av === 'string' && /\d{4}-\d{2}-\d{2}/.test(av) ? Date.parse(av) : av;
-    const bVal = typeof bv === 'string' && /\d{4}-\d{2}-\d{2}/.test(bv) ? Date.parse(bv) : bv;
+    const aVal = toComparableValue(av);
+    const bVal = toComparableValue(bv);
+    if (aVal === bVal) return 0;
     const cmp = aVal > bVal ? 1 : -1;
     return desc ? -cmp : cmp;
   });
