@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ export default function DiagramEditor() {
 
   const [selectedDevice, setSelectedDevice] = useState<DiagramDevice | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
-  const [diagramDevices, setDiagramDevices] = useState<DiagramDevice[]>([]);
 
   const { data: diagram } = useQuery<Diagram | undefined>({
     queryKey: ['diagram', diagramId],
@@ -26,15 +25,11 @@ export default function DiagramEditor() {
     enabled: !!diagramId,
   });
 
-  const { data: initialDiagramDevices = [] } = useQuery<DiagramDevice[]>({
+  const { data: diagramDevices = [] } = useQuery<DiagramDevice[]>({
     queryKey: ['diagram-devices', diagramId],
     queryFn: () => api.diagramDevices.list(diagramId!),
     enabled: !!diagramId,
   });
-
-  useEffect(() => {
-    setDiagramDevices(initialDiagramDevices);
-  }, [initialDiagramDevices]);
 
   const { data: connections = [] } = useQuery<ConnectionType[]>({
     queryKey: ['connections', diagramId],
@@ -207,12 +202,10 @@ export default function DiagramEditor() {
 
         <div className="flex-1 relative">
           <DiagramCanvas
-            diagramId={diagramId!}
             diagramDevices={diagramDevices}
-            setDiagramDevices={setDiagramDevices}
             connections={connections}
-            selectedDevice={selectedDevice}
             onSelectDevice={(d) => setSelectedDevice(d)}
+            devices={devices}
           />
         </div>
 

@@ -1,40 +1,27 @@
-// No React default import needed with automatic JSX runtime
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Image as ImageIcon, GripVertical } from "lucide-react";
+import { Handle, Position } from "reactflow";
 import type { DiagramDevice, Device } from "@/types";
 
 export default function DeviceBlock({
-  diagramDevice,
-  device,
-  isSelected,
-  onSelect,
-  onDragStart
+  data,
 }: {
-  diagramDevice: DiagramDevice;
-  device: Device;
-  isSelected: boolean;
-  onSelect: () => void;
-  onDragStart: (e: React.MouseEvent<HTMLDivElement>) => void;
+  data: {
+    diagramDevice: DiagramDevice;
+    device: Device;
+    onSelect: (diagramDevice: DiagramDevice) => void;
+  };
 }) {
+  const { diagramDevice, device, onSelect } = data;
+
   return (
     <Card
-      id={`device-${diagramDevice.id}`}
-      className={`absolute cursor-move bg-white shadow-xl transition-all ${
-        isSelected ? 'ring-4 ring-cyan-500 shadow-2xl' : ''
-      }`}
-      style={{
-        left: `${diagramDevice.position_x}px`,
-        top: `${diagramDevice.position_y}px`,
-        width: '300px',
-        zIndex: isSelected ? 10 : 2
-      }}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        onSelect();
-        onDragStart(e);
-      }}
+      className="bg-white shadow-xl transition-all w-64"
+      onClick={() => onSelect(diagramDevice)}
     >
+      <Handle type="source" position={Position.Top} />
+      <Handle type="target" position={Position.Bottom} />
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
           <div className="cursor-grab active:cursor-grabbing">
