@@ -25,13 +25,7 @@ type Props = { device: Device; onClose: () => void };
 export default function DeviceIOManager({ device, onClose }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingIO, setEditingIO] = useState<DeviceIO | null>(null);
-  const [formData, setFormData] = useState<{
-    label: string;
-    connector_type: string;
-    gender: 'Male' | 'Female' | 'N/A';
-    direction: 'Input' | 'Output' | 'Bidirectional';
-    signal_type: string;
-  }>({
+  const [formData, setFormData] = useState<Omit<CreateDeviceIOPayload, 'device_id'>>({
     label: "",
     connector_type: "",
     gender: "Female",
@@ -91,7 +85,7 @@ export default function DeviceIOManager({ device, onClose }: Props) {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    saveMutation.mutate({ ...formData, device_id: device.id });
   };
 
   const directionIcons: Record<'Input' | 'Output' | 'Bidirectional', ReactNode> = {
