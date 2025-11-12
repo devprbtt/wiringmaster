@@ -21,6 +21,7 @@ export default function DiagramEditor() {
   const [selectedDevice, setSelectedDevice] = useState<DiagramDevice | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const [selectedIO, setSelectedIO] = useState<DeviceIO | null>(null);
 
   const { data: diagram } = useQuery<Diagram | undefined>({
     queryKey: ['diagram', diagramId],
@@ -75,6 +76,23 @@ export default function DiagramEditor() {
       position_y: 100,
       rotation: 0
     });
+  };
+
+  const handleIOSelected = (io: DeviceIO) => {
+    if (selectedIO && selectedIO.id === io.id) {
+      setSelectedIO(null);
+      return;
+    }
+
+    const connection = connections.find(c => c.source_io_id === io.id || c.target_io_id === io.id);
+    if (connection) {
+      const connectedIOId = connection.source_io_id === io.id ? connection.target_io_id : connection.source_io_id;
+      const connectedIO = allIOs.find(i => i.id === connectedIOId);
+      // @ts-ignore
+      setSelectedIO({ ...io, connectedIO });
+    } else {
+      setSelectedIO(io);
+    }
   };
 
   const exportToTable = () => {
@@ -219,6 +237,8 @@ export default function DiagramEditor() {
             devices={devices}
             allIOs={allIOs}
             snapToGrid={snapToGrid}
+            selectedIO={selectedIO}
+            onIOSelected={handleIOSelected}
           />
         </div>
 
