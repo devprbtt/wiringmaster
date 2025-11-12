@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, GripVertical, Trash2 } from "lucide-react";
 import { Handle, Position } from "reactflow";
-import type { DiagramDevice, Device } from "@/types";
+import type { DiagramDevice, Device, DeviceIO } from "@/types";
 
 export default function DeviceBlock({
   data,
@@ -11,35 +11,26 @@ export default function DeviceBlock({
   data: {
     diagramDevice: DiagramDevice;
     device: Device;
+    deviceIOs: DeviceIO[];
     onSelect: (diagramDevice: DiagramDevice) => void;
     onDelete: () => void;
   };
 }) {
-  const { diagramDevice, device, onSelect, onDelete } = data;
+  const { diagramDevice, device, deviceIOs, onSelect, onDelete } = data;
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete();
   };
 
+  const inputs = deviceIOs.filter((io) => io.direction === "Input");
+  const outputs = deviceIOs.filter((io) => io.direction === "Output");
+
   return (
     <Card
       className="bg-white shadow-xl transition-all w-64"
       onClick={() => onSelect(diagramDevice)}
     >
-      {/* multiple handles to allow parallel edges to route separately */}
-      {/* source handles (outputs) along the top */}
-      <Handle id="s0" type="source" position={Position.Top} style={{ left: '10%' }} />
-      <Handle id="s1" type="source" position={Position.Top} style={{ left: '30%' }} />
-      <Handle id="s2" type="source" position={Position.Top} style={{ left: '50%' }} />
-      <Handle id="s3" type="source" position={Position.Top} style={{ left: '70%' }} />
-      <Handle id="s4" type="source" position={Position.Top} style={{ left: '90%' }} />
-      {/* target handles (inputs) along the bottom */}
-      <Handle id="t0" type="target" position={Position.Bottom} style={{ left: '10%' }} />
-      <Handle id="t1" type="target" position={Position.Bottom} style={{ left: '30%' }} />
-      <Handle id="t2" type="target" position={Position.Bottom} style={{ left: '50%' }} />
-      <Handle id="t3" type="target" position={Position.Bottom} style={{ left: '70%' }} />
-      <Handle id="t4" type="target" position={Position.Bottom} style={{ left: '90%' }} />
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
           <div className="cursor-grab active:cursor-grabbing">
@@ -67,6 +58,35 @@ export default function DeviceBlock({
         <Badge variant="outline" className="text-xs">
           {device.category}
         </Badge>
+      </div>
+
+      <div className="flex justify-between p-4 bg-gray-50 border-t">
+        <div className="flex flex-col gap-2 items-start">
+          {inputs.map((input, index) => (
+            <div key={input.id} className="relative text-left">
+              <Handle
+                type="target"
+                position={Position.Left}
+                id={input.id}
+                style={{ top: `${(index + 1) * 20}px` }}
+              />
+              <span className="text-xs ml-2">{input.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-2 items-end">
+          {outputs.map((output, index) => (
+            <div key={output.id} className="relative text-right">
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={output.id}
+                style={{ top: `${(index + 1) * 20}px` }}
+              />
+              <span className="text-xs mr-2">{output.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </Card>
   );

@@ -217,6 +217,7 @@ export default function DiagramEditor() {
             connections={connections}
             onSelectDevice={(d) => setSelectedDevice(d)}
             devices={devices}
+            allIOs={allIOs}
             snapToGrid={snapToGrid}
           />
         </div>

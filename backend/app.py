@@ -19,14 +19,46 @@ init_db(app)
 
 def seed_db():
     with app.app_context():
-        if Device.query.count() == 0:
-            device1 = Device(id='1', brand='Cisco', model='Catalyst 2960', category='Switch', image_url='https://www.cisco.com/c/en/us/products/collateral/switches/catalyst-2960-series-switches/prod_white_paper0900aecd806ea75f.html', description='A 24-port switch.')
-            db.session.add(device1)
-            db.session.commit()
-        if Diagram.query.count() == 0:
-            diagram1 = Diagram(id='1', name='Sample Diagram', client_name='Jules')
-            db.session.add(diagram1)
-            db.session.commit()
+        # Clear existing data
+        db.session.query(Connection).delete()
+        db.session.query(DiagramDevice).delete()
+        db.session.query(DeviceIO).delete()
+        db.session.query(Device).delete()
+        db.session.query(Diagram).delete()
+        db.session.commit()
+
+        # Seed Devices and IOs
+        device1 = Device(id='1', brand='Blackmagic', model='ATEM Mini Pro', category='Video Switcher')
+        db.session.add(device1)
+        db.session.add_all([
+            DeviceIO(id='101', device_id='1', label='HDMI In 1', direction='Input', connector_type='HDMI', gender='Female', signal_type='Video'),
+            DeviceIO(id='102', device_id='1', label='HDMI In 2', direction='Input', connector_type='HDMI', gender='Female', signal_type='Video'),
+            DeviceIO(id='103', device_id='1', label='HDMI Out', direction='Output', connector_type='HDMI', gender='Female', signal_type='Video'),
+            DeviceIO(id='104', device_id='1', label='Mic 1', direction='Input', connector_type='3.5mm TRS', gender='Female', signal_type='Audio'),
+        ])
+
+        device2 = Device(id='2', brand='Sony', model='A7 III', category='Camera')
+        db.session.add(device2)
+        db.session.add_all([
+            DeviceIO(id='201', device_id='2', label='HDMI Out', direction='Output', connector_type='HDMI', gender='Female', signal_type='Video'),
+            DeviceIO(id='202', device_id='2', label='Mic In', direction='Input', connector_type='3.5mm TRS', gender='Female', signal_type='Audio'),
+        ])
+
+        # Seed Diagram
+        diagram1 = Diagram(id='1', name='Sample Webcast Setup', client_name='Hack Week')
+        db.session.add(diagram1)
+
+        # Add devices to diagram
+        dd1 = DiagramDevice(id='1001', diagram_id='1', device_id='1', position_x=400, position_y=200)
+        dd2 = DiagramDevice(id='1002', diagram_id='1', device_id='2', position_x=100, position_y=100)
+        db.session.add_all([dd1, dd2])
+
+        # Add a connection
+        conn1 = Connection(id='1', diagram_id='1', source_diagram_device_id='1002', source_io_id='201', target_diagram_device_id='1001', target_io_id='101', cable_label='Cam 1')
+        db.session.add(conn1)
+
+        db.session.commit()
+        print("Database seeded!")
 
 # Helper function to generate UUID
 def generate_id():
