@@ -81,21 +81,9 @@ function checkCompatibility(sourceIO: import("@/types").DeviceIO, targetIO: impo
   
   // Valid connections:
   // Output -> Input
-  // Bidirectional -> anything
-  // anything -> Bidirectional
+  // Input -> Output
   
-  const validConnections = [
-    ["Output", "Input"],
-    ["Bidirectional", "Input"],
-    ["Bidirectional", "Output"],
-    ["Bidirectional", "Bidirectional"],
-    ["Output", "Bidirectional"],
-    ["Input", "Bidirectional"]
-  ];
-  
-  const isValidDirection = validConnections.some(
-    ([s, t]) => sourceDir === s && targetDir === t
-  );
+  const isValidDirection = (sourceDir === "Output" && targetDir === "Input") || (sourceDir === "Input" && targetDir === "Output");
   
   if (!isValidDirection) {
     return {

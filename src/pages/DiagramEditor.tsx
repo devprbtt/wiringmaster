@@ -2,6 +2,8 @@ import { useState } from "react";
 import { api } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, Plus, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -18,6 +20,7 @@ export default function DiagramEditor() {
 
   const [selectedDevice, setSelectedDevice] = useState<DiagramDevice | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(true);
 
   const { data: diagram } = useQuery<Diagram | undefined>({
     queryKey: ['diagram', diagramId],
@@ -182,6 +185,14 @@ export default function DiagramEditor() {
             <Download className="w-4 h-4 mr-2" />
             Export Cable List
           </Button>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="snap-to-grid"
+              checked={snapToGrid}
+              onCheckedChange={setSnapToGrid}
+            />
+            <Label htmlFor="snap-to-grid" className="text-white">Snap to Grid</Label>
+          </div>
           <Button
             onClick={() => setShowLibrary(!showLibrary)}
             className="bg-cyan-600 hover:bg-cyan-700"
@@ -206,6 +217,7 @@ export default function DiagramEditor() {
             connections={connections}
             onSelectDevice={(d) => setSelectedDevice(d)}
             devices={devices}
+            snapToGrid={snapToGrid}
           />
         </div>
 

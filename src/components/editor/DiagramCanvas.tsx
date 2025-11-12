@@ -13,8 +13,6 @@ import ReactFlow, {
 import type { Node } from 'reactflow';
 import 'reactflow/dist/style.css';
 import DeviceBlock from './DeviceBlock';
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { getColorFromString } from "@/lib/colors";
 import type { DiagramDevice, Device, Connection } from '@/types';
 
@@ -23,15 +21,16 @@ export default function DiagramCanvas({
   connections,
   onSelectDevice,
   devices,
+  snapToGrid,
 }: {
   diagramDevices: DiagramDevice[];
   connections: Connection[];
   onSelectDevice: (d: DiagramDevice | null) => void;
   devices: Device[];
+  snapToGrid: boolean;
 }) {
   const queryClient = useQueryClient();
   const nodeTypes = useMemo(() => ({ device: DeviceBlock }), []);
-  const [snapToGrid, setSnapToGrid] = useState(true);
 
   type UpdateDiagramDeviceVars = {
     id: string;
@@ -59,11 +58,16 @@ export default function DiagramCanvas({
         id: diagramDevice.id,
         type: 'device',
         position: { x: diagramDevice.position_x, y: diagramDevice.position_y },
-        data: { diagramDevice, device, onSelect: onSelectDevice },
+        data: {
+          diagramDevice,
+          device,
+          onSelect: onSelectDevice,
+          onDelete: () => deleteDeviceMutation.mutate(diagramDevice.id),
+        },
       };
     });
     setNodes(newNodes);
-  }, [diagramDevices, devices, onSelectDevice, setNodes]);
+  }, [diagramDevices, devices, onSelectDevice, setNodes, deleteDeviceMutation]);
 
   useEffect(() => {
     // distribute parallel edges between the same pair over different handles
@@ -156,17 +160,6 @@ export default function DiagramCanvas({
         <MiniMap />
         <Controls />
         <Background />
-        <div
-          className="absolute bottom-4 left-4 flex items-center gap-2 bg-gray-800 p-2 rounded nopan nowheel"
-          style={{ zIndex: 5 }}
-        >
-          <Switch
-            id="snap-to-grid"
-            checked={snapToGrid}
-            onCheckedChange={setSnapToGrid}
-          />
-          <Label htmlFor="snap-to-grid" className="text-white">Snap to Grid</Label>
-        </div>
       </ReactFlow>
     </div>
   );
