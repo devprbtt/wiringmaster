@@ -23,6 +23,8 @@ export default function DiagramCanvas({
   devices,
   allIOs,
   snapToGrid,
+  selectedIO,
+  onIOSelected,
 }: {
   diagramDevices: DiagramDevice[];
   connections: Connection[];
@@ -30,6 +32,8 @@ export default function DiagramCanvas({
   devices: Device[];
   allIOs: DeviceIO[];
   snapToGrid: boolean;
+  selectedIO: DeviceIO | null;
+  onIOSelected: (io: DeviceIO) => void;
 }) {
   const queryClient = useQueryClient();
   const nodeTypes = useMemo(() => ({ device: DeviceBlock }), []);
@@ -82,11 +86,13 @@ export default function DiagramCanvas({
           deviceIOs,
           onSelect: onSelectDevice,
           onDelete: () => deleteDeviceMutation.mutate(diagramDevice.id),
+          selectedIO,
+          onIOSelected,
         },
       };
     });
     setNodes(newNodes);
-  }, [diagramDevices, devices, allIOs, onSelectDevice]);
+  }, [diagramDevices, devices, allIOs, onSelectDevice, selectedIO, onIOSelected]);
 
   useEffect(() => {
     // distribute parallel edges between the same pair over different handles
