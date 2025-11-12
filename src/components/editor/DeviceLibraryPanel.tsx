@@ -72,7 +72,7 @@ export default function DeviceLibraryPanel({ onSelectDevice, onClose }: { onSele
                 <div className="w-16 h-16 bg-gray-600 rounded flex items-center justify-center flex-shrink-0">
                   {device.image_url ? (
                     <img
-                      src={`/uploads/${device.image_url}`}
+                      src={device.image_url}
                       alt={device.model}
                       className="w-full h-full object-contain rounded"
                     />

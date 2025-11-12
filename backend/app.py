@@ -20,7 +20,7 @@ init_db(app)
 def seed_db():
     with app.app_context():
         if Device.query.count() == 0:
-            device1 = Device(id='1', brand='Cisco', model='Catalyst 2960', category='Switch', image_url=None, description='A 24-port switch.')
+            device1 = Device(id='1', brand='Cisco', model='Catalyst 2960', category='Switch', image_url='https://www.cisco.com/c/en/us/products/collateral/switches/catalyst-2960-series-switches/prod_white_paper0900aecd806ea75f.html', description='A 24-port switch.')
             db.session.add(device1)
             db.session.commit()
         if Diagram.query.count() == 0:

@@ -148,10 +148,11 @@ export default function DiagramCanvas({
         onNodesDelete={onNodesDelete}
         nodeTypes={nodeTypes}
         onNodeDragStop={onNodeDragStop}
+        fitView
         snapToGrid={snapToGrid}
         snapGrid={[20, 20]}
-        panOnDrag={[1, 2]}
-        panOnScroll
+        // right-click (button 2) to pan, keep left-click free for UI
+        panOnDrag={[2]}
         // enforce opposite-handle connections only
         connectionMode={ConnectionMode.Strict}
         proOptions={{ hideAttribution: true }}
