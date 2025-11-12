@@ -14,19 +14,21 @@ import type { Node } from 'reactflow';
 import 'reactflow/dist/style.css';
 import DeviceBlock from './DeviceBlock';
 import { getColorFromString } from "@/lib/colors";
-import type { DiagramDevice, Device, Connection } from '@/types';
+import type { DiagramDevice, Device, Connection, DeviceIO } from '@/types';
 
 export default function DiagramCanvas({
   diagramDevices,
   connections,
   onSelectDevice,
   devices,
+  allIOs,
   snapToGrid,
 }: {
   diagramDevices: DiagramDevice[];
   connections: Connection[];
   onSelectDevice: (d: DiagramDevice | null) => void;
   devices: Device[];
+  allIOs: DeviceIO[];
   snapToGrid: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -69,6 +71,7 @@ export default function DiagramCanvas({
   useEffect(() => {
     const newNodes = diagramDevices.map((diagramDevice) => {
       const device = devices.find((d) => d.id === diagramDevice.device_id);
+      const deviceIOs = allIOs.filter((io) => io.device_id === device?.id);
       return {
         id: diagramDevice.id,
         type: 'device',
@@ -76,13 +79,14 @@ export default function DiagramCanvas({
         data: {
           diagramDevice,
           device,
+          deviceIOs,
           onSelect: onSelectDevice,
           onDelete: () => deleteDeviceMutation.mutate(diagramDevice.id),
         },
       };
     });
     setNodes(newNodes);
-  }, [diagramDevices, devices, onSelectDevice]);
+  }, [diagramDevices, devices, allIOs, onSelectDevice]);
 
   useEffect(() => {
     // distribute parallel edges between the same pair over different handles
@@ -95,18 +99,12 @@ export default function DiagramCanvas({
     };
 
     const newEdges = connections.map((connection) => {
-      const key = keyFor(connection.source_diagram_device_id, connection.target_diagram_device_id);
-      const idx = pairIndex[key] ?? 0;
-      pairIndex[key] = idx + 1;
-      const handleIdx = idx % MAX_HANDLES;
-
       return {
         id: connection.id,
         source: connection.source_diagram_device_id,
         target: connection.target_diagram_device_id,
-        // attach to different handles to avoid overlapping
-        sourceHandle: `s${handleIdx}`,
-        targetHandle: `t${handleIdx}`,
+        sourceHandle: connection.source_io_id,
+        targetHandle: connection.target_io_id,
         type: 'smoothstep' as const,
         animated: true,
         style: { stroke: getColorFromString(connection.id) },
