@@ -78,6 +78,16 @@ export default function DiagramEditor() {
     });
   };
 
+  const createConnectionMutation = useMutation({
+    mutationFn: (data: ConnectionType) => api.connections.create(data),
+    onSuccess: (newConnection) => {
+      queryClient.setQueryData(['connections', diagramId], (old: ConnectionType[] | undefined) => {
+        if (!old) return [newConnection];
+        return [...old, newConnection];
+      });
+    },
+  });
+
   const handleIOSelected = (io: DeviceIO) => {
     if (selectedIO && selectedIO.id === io.id) {
       setSelectedIO(null);
@@ -93,6 +103,35 @@ export default function DiagramEditor() {
     } else {
       setSelectedIO(io);
     }
+  };
+
+  const handleCreateConnection = (params: { source: string, target: string, sourceHandle: string, targetHandle: string }) => {
+    const sourceIO = allIOs.find(io => io.id === params.sourceHandle);
+
+    let payload = {};
+
+    if (sourceIO?.direction === 'Output') {
+      payload = {
+        source_diagram_device_id: params.source,
+        source_io_id: params.sourceHandle,
+        target_diagram_device_id: params.target,
+        target_io_id: params.targetHandle,
+      }
+    } else {
+      // Input to Output connection
+      payload = {
+        source_diagram_device_id: params.target,
+        source_io_id: params.targetHandle,
+        target_diagram_device_id: params.source,
+        target_io_id: params.sourceHandle,
+      }
+    }
+
+    // @ts-ignore
+    createConnectionMutation.mutate({
+      diagram_id: diagramId,
+      ...payload,
+    });
   };
 
   const exportToTable = () => {
@@ -239,6 +278,7 @@ export default function DiagramEditor() {
             snapToGrid={snapToGrid}
             selectedIO={selectedIO}
             onIOSelected={handleIOSelected}
+            onCreateConnection={handleCreateConnection}
           />
         </div>
 

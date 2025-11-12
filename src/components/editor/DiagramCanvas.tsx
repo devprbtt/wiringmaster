@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import ReactFlow, {
@@ -25,6 +25,7 @@ export default function DiagramCanvas({
   snapToGrid,
   selectedIO,
   onIOSelected,
+  onCreateConnection,
 }: {
   diagramDevices: DiagramDevice[];
   connections: Connection[];
@@ -34,6 +35,7 @@ export default function DiagramCanvas({
   snapToGrid: boolean;
   selectedIO: DeviceIO | null;
   onIOSelected: (io: DeviceIO) => void;
+  onCreateConnection: (params: any) => void;
 }) {
   const queryClient = useQueryClient();
   const nodeTypes = useMemo(() => ({ device: DeviceBlock }), []);
@@ -113,7 +115,7 @@ export default function DiagramCanvas({
         targetHandle: connection.target_io_id,
         type: 'smoothstep' as const,
         animated: true,
-        style: { stroke: getColorFromString(connection.id) },
+        style: { stroke: getColorFromString(connection.id), strokeWidth: 3 },
         label: connection.cable_label,
         labelShowBg: true,
         labelBgStyle: { fill: 'white' },
@@ -121,6 +123,8 @@ export default function DiagramCanvas({
         labelBgBorderRadius: 4,
         markerEnd: {
           type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
         },
       };
     });
@@ -152,6 +156,7 @@ export default function DiagramCanvas({
         onNodesDelete={onNodesDelete}
         nodeTypes={nodeTypes}
         onNodeDragStop={onNodeDragStop}
+        onConnect={onCreateConnection}
         fitView
         snapToGrid={snapToGrid}
         snapGrid={[20, 20]}
