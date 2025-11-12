@@ -38,7 +38,7 @@ export default function DeviceBlock({
 
   return (
     <Card
-      className="bg-white shadow-xl transition-all w-64"
+      className="bg-white shadow-xl transition-all min-w-64"
       onClick={() => onSelect(diagramDevice)}
     >
       <div className="p-4">
@@ -47,7 +47,7 @@ export default function DeviceBlock({
             <GripVertical className="w-5 h-5 text-gray-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg truncate">{device.model}</h3>
+            <h3 className="font-bold text-lg">{device.model}</h3>
             <p className="text-sm text-gray-600">{device.brand}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={handleDelete} className="text-gray-500 hover:text-red-500">
