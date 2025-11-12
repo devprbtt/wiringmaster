@@ -129,7 +129,7 @@ export default function DiagramEditor() {
 
     // @ts-ignore
     createConnectionMutation.mutate({
-      diagram_id: diagramId,
+      diagram_id: diagramId!,
       ...payload,
     });
   };

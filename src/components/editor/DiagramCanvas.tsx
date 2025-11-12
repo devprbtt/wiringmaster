@@ -97,14 +97,6 @@ export default function DiagramCanvas({
   }, [diagramDevices, devices, allIOs, onSelectDevice, selectedIO, onIOSelected]);
 
   useEffect(() => {
-    // distribute parallel edges between the same pair over different handles
-    const MAX_HANDLES = 5;
-    const pairIndex: Record<string, number> = {};
-
-    const keyFor = (a: string, b: string) => {
-      // group by unordered pair so both directions spread similarly
-      return [a, b].sort().join('|');
-    };
 
     const newEdges = connections.map((connection) => {
       return {
