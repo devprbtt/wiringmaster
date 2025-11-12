@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import ReactFlow, {
@@ -45,6 +45,21 @@ export default function DiagramCanvas({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['diagram-devices', data.diagram_id] });
+    },
+  });
+
+  const deleteDeviceMutation = useMutation<void, Error, string>({
+    mutationFn: (id: string) => api.diagramDevices.delete(id),
+    onMutate: async (id: string) => {
+      // optimistic removal from react-query caches for any diagram-devices queries
+      await queryClient.cancelQueries({ queryKey: ['diagram-devices'] });
+      queryClient.setQueriesData({ queryKey: ['diagram-devices'] }, (old: DiagramDevice[] | undefined) => {
+        if (!old) return old;
+        return old.filter((d) => d.id !== id);
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['diagram-devices'] });
     },
   });
 
@@ -108,21 +123,6 @@ export default function DiagramCanvas({
 
     setEdges(newEdges);
   }, [connections, setEdges]);
-
-  const deleteDeviceMutation = useMutation<void, Error, string>({
-    mutationFn: (id: string) => api.diagramDevices.delete(id),
-    onMutate: async (id: string) => {
-      // optimistic removal from react-query caches for any diagram-devices queries
-      await queryClient.cancelQueries({ queryKey: ['diagram-devices'] });
-      queryClient.setQueriesData({ queryKey: ['diagram-devices'] }, (old: DiagramDevice[] | undefined) => {
-        if (!old) return old;
-        return old.filter((d) => d.id !== id);
-      });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['diagram-devices'] });
-    },
-  });
 
   const onNodesDelete = (deletedNodes: Node[]) => {
     for (const node of deletedNodes) {
