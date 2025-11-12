@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Image as ImageIcon, GripVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Image as ImageIcon, GripVertical, Trash2 } from "lucide-react";
 import { Handle, Position } from "reactflow";
 import type { DiagramDevice, Device } from "@/types";
 
@@ -11,9 +12,15 @@ export default function DeviceBlock({
     diagramDevice: DiagramDevice;
     device: Device;
     onSelect: (diagramDevice: DiagramDevice) => void;
+    onDelete: () => void;
   };
 }) {
-  const { diagramDevice, device, onSelect } = data;
+  const { diagramDevice, device, onSelect, onDelete } = data;
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete();
+  };
 
   return (
     <Card
@@ -42,6 +49,9 @@ export default function DeviceBlock({
             <h3 className="font-bold text-lg truncate">{device.model}</h3>
             <p className="text-sm text-gray-600">{device.brand}</p>
           </div>
+          <Button variant="ghost" size="icon" onClick={handleDelete} className="text-gray-500 hover:text-red-500">
+            <Trash2 className="w-5 h-5" />
+          </Button>
           {device.image_url ? (
             <img
               src={device.image_url}

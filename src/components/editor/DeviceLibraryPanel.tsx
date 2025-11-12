@@ -74,7 +74,7 @@ export default function DeviceLibraryPanel({ onSelectDevice, onClose }: { onSele
                     <img
                       src={device.image_url}
                       alt={device.model}
-                      className="w-full h-full object-cover rounded"
+                      className="w-full h-full object-contain rounded"
                     />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-gray-400" />
