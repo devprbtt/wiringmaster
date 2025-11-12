@@ -82,7 +82,7 @@ export default function DiagramCanvas({
       };
     });
     setNodes(newNodes);
-  }, [diagramDevices, devices, onSelectDevice, setNodes, deleteDeviceMutation]);
+  }, [diagramDevices, devices, onSelectDevice]);
 
   useEffect(() => {
     // distribute parallel edges between the same pair over different handles
