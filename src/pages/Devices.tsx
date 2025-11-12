@@ -100,7 +100,8 @@ export default function Devices() {
                   <img
                     src={device.image_url}
                     alt={device.model}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    // ⬇️ Change object-cover to object-contain
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               )}
